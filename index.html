@@ -126,7 +126,6 @@
     .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 56px 40px; }
     .map-node { position: relative; background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-md); padding: 12px 14px; box-sizing: border-box; transition: border-color var(--jm-dur), box-shadow var(--jm-dur); }
     .map-node.empty { visibility: hidden; }
-    .map-node::before { content:""; position:absolute; inset:0 0 auto 0; height:3px; border-radius: var(--jm-r-md) var(--jm-r-md) 0 0; background: linear-gradient(90deg, var(--role, transparent), transparent 75%); opacity:.85; }
     .map-node--focus { border-color: var(--jm-green); box-shadow: 0 0 0 3px rgba(14,156,125,.15); }
     .map-node-head { display:flex; align-items:center; gap:6px; margin-bottom: 8px; }
     .role-dot { width:7px; height:7px; border-radius:50%; background: var(--role, var(--jm-muted)); flex:none; }
