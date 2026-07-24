@@ -121,9 +121,19 @@
     /* --- Metric map --- */
     .map-card { background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-lg); padding: 24px; box-shadow: var(--jm-e2); margin-top: 16px; }
     .map-card h2 { font-size: 0.875rem; color: var(--jm-muted); margin: 0 0 20px; font-weight: 600; }
+    .dash-row { display: flex; gap: 16px; margin-top: 16px; align-items: stretch; }
+    .dash-row .map-half { flex: 1; min-width: 0; margin-top: 0; }
+    @media (max-width: 1100px) { .dash-row { flex-direction: column; } }
     .map-container { position: relative; }
     .map-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-    .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 56px 40px; }
+    .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 40px 10px; }
+    .map-half .map-node { padding: 8px 9px; }
+    .map-half .map-node-value { font-size: 15px; padding: 4px 5px; }
+    .map-half .map-node-label { font-size: 8.5px; }
+    .map-half .map-node-head { gap: 4px; margin-bottom: 6px; }
+    .map-half .role-dot { width: 6px; height: 6px; }
+    .map-half .map-node-sub { font-size: 8.5px; }
+    .legend-item.legend-off { opacity: 0.35; }
     .map-node { position: relative; background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-md); padding: 12px 14px; box-sizing: border-box; transition: border-color var(--jm-dur), box-shadow var(--jm-dur); }
     .map-node.empty { visibility: hidden; }
     .map-node--focus { border-color: var(--jm-green); box-shadow: 0 0 0 3px rgba(14,156,125,.15); }
@@ -205,7 +215,8 @@
   <div class="loading-bar" id="loading-bar"></div>
   <div class="period-label" id="period-label">Загрузка данных...</div>
 
-  <div class="map-card">
+  <div class="dash-row">
+  <div class="map-card map-half">
     <h2>Metric map</h2>
     <div class="map-container">
       <svg id="map-svg" class="map-svg"></svg>
@@ -254,13 +265,13 @@
   </div>
 
   <!-- Trend chart -->
-  <div class="map-card" style="margin-top:16px;">
+  <div class="map-card map-half" style="margin-top:0;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
       <h2 style="margin:0;">Динамика</h2>
       <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
         <div style="display:flex; gap:14px; font-size:12px; color:var(--jm-muted); align-items:center;">
-          <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:2px; background:var(--jm-green); display:inline-block;"></span>Free</span>
-          <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:2px; background:var(--jm-blue); display:inline-block;"></span>Paid</span>
+          <span class="legend-item" data-series="free" onclick="toggleSeries('free')" style="display:flex; align-items:center; gap:5px; cursor:pointer; user-select:none;"><span style="width:10px; height:10px; border-radius:2px; background:var(--jm-green); display:inline-block;"></span>Free</span>
+          <span class="legend-item" data-series="paid" onclick="toggleSeries('paid')" style="display:flex; align-items:center; gap:5px; cursor:pointer; user-select:none;"><span style="width:10px; height:10px; border-radius:2px; background:var(--jm-blue); display:inline-block;"></span>Paid</span>
           <span style="display:flex; align-items:center; gap:5px;"><span style="width:16px; height:2px; background:var(--jm-purple); display:inline-block;"></span>Выручка</span>
         </div>
         <div class="presets" id="granularity">
@@ -270,10 +281,12 @@
         </div>
       </div>
     </div>
-    <div id="chart-wrap" style="overflow-x:auto;">
+    <div id="chart-wrap" style="overflow-x:auto; position:relative;">
       <svg id="trend-svg" style="display:block;"></svg>
+      <div id="chart-tooltip" style="position:absolute; pointer-events:none; display:none; background:var(--jm-ink); color:#fff; font-size:11px; font-family:var(--jm-font-mono); padding:7px 9px; border-radius:6px; box-shadow:var(--jm-e3); z-index:10; white-space:nowrap; line-height:1.5;"></div>
     </div>
   </div>
+  </div><!-- /.dash-row -->
 
   <div style="display: flex; gap: 16px; margin-top: 16px;">
   <div class="table-card" style="margin-top: 0; flex: 1; min-width: 0; overflow-x: auto;">
@@ -369,18 +382,29 @@
       renderTrend(getBaseRows());
     }
 
+    var hiddenSeries = {};  // { free:true } => серия скрыта
+    function toggleSeries(name) {
+      if (hiddenSeries[name]) delete hiddenSeries[name]; else hiddenSeries[name] = true;
+      var el = document.querySelector('.legend-item[data-series="' + name + '"]');
+      if (el) el.classList.toggle('legend-off', !!hiddenSeries[name]);
+      renderTrend(getBaseRows());
+    }
+
+    // Ключ бакета — сортируемый ISO. Понедельник для недели.
     function bucketKey(d, g) {
       var y = d.getFullYear();
       if (g === 'month') return y + '-' + String(d.getMonth()+1).padStart(2,'0');
       if (g === 'day')   return y + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-      // week: ISO-ish, привязка к понедельнику
       var day = (d.getDay() + 6) % 7;
       var monday = new Date(d); monday.setDate(d.getDate() - day); monday.setHours(0,0,0,0);
-      return monday.getFullYear() + '-W' + String(monday.getMonth()+1).padStart(2,'0') + String(monday.getDate()).padStart(2,'0');
+      return monday.getFullYear() + '-' + String(monday.getMonth()+1).padStart(2,'0') + '-' + String(monday.getDate()).padStart(2,'0');
     }
+    var MONTHS_RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    // Человеческая подпись бакета. g: 'day' → «дд.мм», 'week' → «дд.мм», 'month' → «мон 'гг».
     function bucketLabel(key, g) {
-      if (g === 'month') { var p = key.split('-'); return p[2==2? 1:1] ? key.slice(2) : key; }
-      return key.replace(/^20/, '').replace('-W', ' ');
+      var p = key.split('-');
+      if (g === 'month') return MONTHS_RU[parseInt(p[1],10)-1] + " '" + p[0].slice(2);
+      return p[2] + '.' + p[1];   // дд.мм
     }
 
     function renderTrend(rows) {
@@ -409,11 +433,17 @@
       var minW = document.getElementById('chart-wrap').clientWidth;
       var H = plotH + padT + padB;
 
+      var showFree = !hiddenSeries.free, showPaid = !hiddenSeries.paid;
+      // Ось count учитывает только видимые серии.
       var maxCount = 1, maxRev = 1;
-      keys.forEach(function(k){ maxCount = Math.max(maxCount, buckets[k].free + buckets[k].paid); maxRev = Math.max(maxRev, buckets[k].rev); });
+      keys.forEach(function(k){
+        var c = (showFree ? buckets[k].free : 0) + (showPaid ? buckets[k].paid : 0);
+        maxCount = Math.max(maxCount, c);
+        maxRev = Math.max(maxRev, buckets[k].rev);
+      });
 
       var els = '';
-      // сетка (4 линии)
+      // сетка (4 линии) + подписи оси count
       for (var g=0; g<=4; g++) {
         var gy = padT + plotH - (plotH * g/4);
         els += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" stroke="var(--jm-line-soft)" stroke-width="1"/>';
@@ -424,20 +454,23 @@
       keys.forEach(function(k, i) {
         var b = buckets[k];
         var x = padL + i*(barW+gap);
-        var total = b.free + b.paid;
-        var freeH = plotH * (b.free / maxCount);
-        var paidH = plotH * (b.paid / maxCount);
+        var freeH = showFree ? plotH * (b.free / maxCount) : 0;
+        var paidH = showPaid ? plotH * (b.paid / maxCount) : 0;
         var yFreeTop = padT + plotH - freeH;
         var yPaidTop = yFreeTop - paidH;
         // free (низ, зелёный) + paid (верх, синий) — стек
-        els += '<rect x="'+x+'" y="'+yFreeTop+'" width="'+barW+'" height="'+freeH+'" fill="var(--jm-green)" rx="2"/>';
-        els += '<rect x="'+x+'" y="'+yPaidTop+'" width="'+barW+'" height="'+paidH+'" fill="var(--jm-blue)" rx="2"/>';
+        if (showFree) els += '<rect x="'+x+'" y="'+yFreeTop+'" width="'+barW+'" height="'+freeH+'" fill="var(--jm-green)" rx="2"/>';
+        if (showPaid) els += '<rect x="'+x+'" y="'+yPaidTop+'" width="'+barW+'" height="'+paidH+'" fill="var(--jm-blue)" rx="2"/>';
         // подпись оси X
-        var lbl = k.replace(/^20/, '').replace('-W', ' ');
+        var lbl = bucketLabel(k, granularity);
         els += '<text x="'+(x+barW/2)+'" y="'+(padT+plotH+14)+'" text-anchor="middle" font-family="var(--jm-font-mono)" font-size="8.5" fill="var(--jm-faint)" transform="rotate(35 '+(x+barW/2)+' '+(padT+plotH+14)+')">'+lbl+'</text>';
         // точка линии выручки
         var ly = padT + plotH - plotH*(b.rev/maxRev);
         linePts.push([x+barW/2, ly, b.rev]);
+        // невидимая hover-зона на всю высоту столбца (для tooltip)
+        els += '<rect class="hover-col" x="'+x+'" y="'+padT+'" width="'+barW+'" height="'+plotH+'" fill="transparent" '
+          + 'data-k="'+encodeURIComponent(k)+'" data-free="'+b.free+'" data-paid="'+b.paid+'" data-rev="'+Math.round(b.rev)+'" '
+          + 'data-cx="'+(x+barW/2)+'"/>';
       });
 
       // линия выручки (purple)
@@ -450,6 +483,36 @@
       svg.setAttribute('width', Math.max(W, minW));
       svg.setAttribute('height', H);
       svg.innerHTML = els;
+      attachChartTooltip(svg);
+    }
+
+    // Tooltip при наведении на столбец.
+    function attachChartTooltip(svg) {
+      var tip = document.getElementById('chart-tooltip');
+      var wrap = document.getElementById('chart-wrap');
+      svg.querySelectorAll('.hover-col').forEach(function(zone) {
+        zone.style.cursor = 'default';
+        zone.onmouseenter = function() {
+          var k = decodeURIComponent(zone.getAttribute('data-k'));
+          var free = zone.getAttribute('data-free');
+          var paid = zone.getAttribute('data-paid');
+          var rev = parseInt(zone.getAttribute('data-rev'), 10);
+          var revStr = '$' + rev.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+          var lbl = bucketLabel(k, granularity) + (granularity === 'week' ? ' (нед.)' : '');
+          tip.innerHTML = '<div style="opacity:.7; margin-bottom:2px;">' + lbl + '</div>'
+            + '<div><span style="color:#7EE0C6">■</span> Free: ' + free + '</div>'
+            + '<div><span style="color:#5B9CFF">■</span> Paid: ' + paid + '</div>'
+            + '<div><span style="color:#C4ADF0">—</span> Выручка: ' + revStr + '</div>';
+          tip.style.display = 'block';
+          var cx = parseFloat(zone.getAttribute('data-cx'));
+          var tipW = tip.offsetWidth;
+          var left = cx - tipW/2;
+          left = Math.max(0, Math.min(left, wrap.scrollWidth - tipW));
+          tip.style.left = left + 'px';
+          tip.style.top = '4px';
+        };
+        zone.onmouseleave = function() { tip.style.display = 'none'; };
+      });
     }
 
     // --- Dropdowns ---
@@ -912,9 +975,28 @@
 
     var encryptedBlob = null;
 
+    // Продукт мог быть переименован (одинаковый Product ID, разные Item Name).
+    // Приводим все имена к каноническому = имя из самой ПОЗДНЕЙ продажи по этому Product ID.
+    function canonicalizeProductNames(rows) {
+      var latest = {};  // productId -> { date, name }
+      rows.forEach(function(r) {
+        var pid = r['Product ID'];
+        if (!pid) return;
+        var name = r['Item Name'] || '—';
+        var t = new Date(r['Purchase Date']).getTime();
+        if (isNaN(t)) t = 0;
+        if (!latest[pid] || t > latest[pid].date) latest[pid] = { date: t, name: name };
+      });
+      rows.forEach(function(r) {
+        var pid = r['Product ID'];
+        if (pid && latest[pid]) r['Item Name'] = latest[pid].name;
+      });
+    }
+
     async function loadAndRender(password) {
       var json = await decryptPayload(password, encryptedBlob);   // бросит, если пароль неверный
       allRows = JSON.parse(json);
+      canonicalizeProductNames(allRows);   // схлопнуть переименованные продукты по Product ID
       document.getElementById('gate-error').textContent = '';
       document.getElementById('gate').style.display = 'none';
       document.getElementById('app').style.display = 'block';
