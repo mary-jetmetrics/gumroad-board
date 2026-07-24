@@ -285,7 +285,13 @@
   </div>
 
   <div class="table-card" style="margin-top: 0; flex: 1; min-width: 0; overflow-x: auto;">
-    <h2 id="users-title">По пользователям</h2>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+      <h2 id="users-title" style="margin:0;">По пользователям</h2>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--jm-muted); cursor:pointer; white-space:nowrap;">
+        <input type="checkbox" id="only-new" style="accent-color:var(--jm-green); cursor:pointer;" onchange="showOnlyNew=this.checked; renderUsersTable();">
+        Только новые 🆕
+      </label>
+    </div>
     <table>
       <thead id="users-thead"><tr></tr></thead>
       <tbody id="users-table"></tbody>
@@ -305,6 +311,7 @@
     var sortProducts = { col: 'total', dir: -1 };
     var sortUsers = { col: 'total', dir: -1 };
     var granularity = 'week';
+    var showOnlyNew = false;
 
     function fmt(date) {
       var d = date.getDate().toString().padStart(2,'0');
@@ -467,15 +474,22 @@
         var cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.checked = !!selected[opt];
-        cb.onchange = (function(o) { return function() {
-          if (this.checked) selected[o] = true; else delete selected[o];
+        var apply = (function(o) { return function(isChecked) {
+          if (isChecked) selected[o] = true; else delete selected[o];
           updateDropdownLabel(id, selected);
           activeProduct = null; activeUser = null;
           renderAll();
         }; })(opt);
+        cb.onchange = function() { apply(this.checked); };
         var span = document.createElement('span');
         span.textContent = opt;
         div.appendChild(cb); div.appendChild(span);
+        // Клик по всей строке (не только по чекбоксу) переключает выбор.
+        div.onclick = (function(checkbox, applyFn) { return function(ev) {
+          if (ev.target === checkbox) return;   // сам чекбокс обработает onchange
+          checkbox.checked = !checkbox.checked;
+          applyFn(checkbox.checked);
+        }; })(cb, apply);
         container.appendChild(div);
       });
       updateDropdownLabel(id, selected);
@@ -754,6 +768,8 @@
       sortedUsers.forEach(function(email) {
         var u = users[email];
         var isNew = periodStart && firstSeen[email] && firstSeen[email] >= periodStart;
+        // «только новые» работает лишь когда выбран период (иначе новизну не определить)
+        if (showOnlyNew && periodStart && !isNew) return;
         var cr = u.free > 0 ? (u.paid / u.free * 100).toFixed(1) + '%' : '—';
         var emailCell = email + ' <span class="nowrap"><button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + email.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>' + (isNew ? ' 🆕' : '') + '</span>';
         var nameCell = u.name
