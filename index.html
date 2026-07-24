@@ -85,6 +85,8 @@
     .copy-btn { border: none; background: none; cursor: pointer; color: var(--jm-faint); font-size: 13px; padding: 0 4px; vertical-align: middle; transition: color var(--jm-dur-fast); }
     .copy-btn:hover { color: var(--jm-green); }
     .nowrap { white-space: nowrap; }
+    .cell-ellip { display: inline-block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+    #users-table td:first-child, #users-table td:nth-child(2) { white-space: nowrap; }
 
     .loading-bar { height: 3px; background: linear-gradient(90deg, var(--jm-green) 40%, var(--jm-green-tint) 40%); background-size: 200% 100%; animation: loading 1.2s infinite; border-radius: 3px; margin-bottom: 20px; }
     @keyframes loading { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
@@ -126,13 +128,13 @@
     @media (max-width: 1100px) { .dash-row { flex-direction: column; } }
     .map-container { position: relative; }
     .map-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-    .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 40px 10px; }
-    .map-half .map-node { padding: 8px 9px; }
-    .map-half .map-node-value { font-size: 15px; padding: 4px 5px; }
-    .map-half .map-node-label { font-size: 8.5px; }
-    .map-half .map-node-head { gap: 4px; margin-bottom: 6px; }
-    .map-half .role-dot { width: 6px; height: 6px; }
-    .map-half .map-node-sub { font-size: 8.5px; }
+    .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 34px 20px; }
+    .map-half .map-node { padding: 7px 6px; }
+    .map-half .map-node-value { font-size: 13px; padding: 3px 4px; display: block; box-sizing: border-box; }
+    .map-half .map-node-label { font-size: 8px; }
+    .map-half .map-node-head { gap: 4px; margin-bottom: 5px; }
+    .map-half .role-dot { width: 5px; height: 5px; }
+    .map-half .map-node-sub { font-size: 8px; }
     .legend-item.legend-off { opacity: 0.35; }
     .map-node { position: relative; background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-md); padding: 12px 14px; box-sizing: border-box; transition: border-color var(--jm-dur), box-shadow var(--jm-dur); }
     .map-node.empty { visibility: hidden; }
@@ -834,9 +836,11 @@
         // «только новые» работает лишь когда выбран период (иначе новизну не определить)
         if (showOnlyNew && periodStart && !isNew) return;
         var cr = u.free > 0 ? (u.paid / u.free * 100).toFixed(1) + '%' : '—';
-        var emailCell = email + ' <span class="nowrap"><button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + email.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>' + (isNew ? ' 🆕' : '') + '</span>';
+        var emailCell = '<span class="cell-ellip" title="' + email + '">' + email + '</span>'
+          + '<span class="nowrap"><button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + email.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>'
+          + (isNew ? ' 🆕' : '') + '</span>';
         var nameCell = u.name
-          ? '<span class="nowrap">' + u.name + ' <button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + u.name.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button></span>'
+          ? '<span class="cell-ellip" title="' + u.name.replace(/"/g, '&quot;') + '">' + u.name + '</span> <button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + u.name.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>'
           : '—';
         var tr = document.createElement('tr');
         tr.className = 'clickable' + (email === activeUser ? ' row-active' : '');
