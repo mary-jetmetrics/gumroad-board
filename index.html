@@ -900,6 +900,7 @@
     async function loadAndRender(password) {
       var json = await decryptPayload(password, encryptedBlob);   // бросит, если пароль неверный
       allRows = JSON.parse(json);
+      document.getElementById('gate-error').textContent = '';
       document.getElementById('gate').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       document.getElementById('loading-bar').classList.add('hidden');
