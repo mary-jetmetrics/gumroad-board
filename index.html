@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>JetMetrics Sales</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --jm-green:#0E9C7D; --jm-green-press:#0B7D64; --jm-green-deep:#064D2B;
+      --jm-green-tint:#E7F6F1; --jm-green-tint-soft:#E8FBF7;
+      --jm-coral:#FF5C60; --jm-coral-text:#DC4048; --jm-coral-tint:#FDE9EA;
+      --jm-yellow:#FFC700; --jm-yellow-text:#A07A00; --jm-yellow-tint:#FFF4D6;
+      --jm-blue:#4991FF; --jm-blue-press:#357EF0; --jm-blue-tint:#EAF2FF;
+      --jm-purple:#9370DB; --jm-purple-text:#6D4FB0; --jm-purple-tint:#F0EBFA;
+      --jm-ink:#080B0D; --jm-ink-700:#1A1F26; --jm-text:#20262E;
+      --jm-muted:#6B7372; --jm-faint:#98A0A6; --jm-line:#E4E8EC; --jm-line-soft:#EEF1F3;
+      --jm-bg:#F6F8FA; --jm-surface:#FFFFFF; --jm-chart-compare:#C9CED3;
+      --jm-font-sans:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+      --jm-font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+      --jm-r-sm:8px; --jm-r-md:12px; --jm-r-lg:16px; --jm-r-xl:20px; --jm-r-pill:999px;
+      --jm-e1:0 1px 2px rgba(8,11,13,.06); --jm-e2:0 4px 16px rgba(8,11,13,.06); --jm-e3:0 12px 32px rgba(8,11,13,.10);
+      --jm-ring:0 0 0 3px rgba(14,156,125,.28);
+      --jm-ease:cubic-bezier(.2,.6,.2,1); --jm-dur:.17s; --jm-dur-fast:.12s;
+      --jm-tracking-label:0.08em;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: var(--jm-font-sans); padding: 32px; background: var(--jm-bg);
+      color: var(--jm-text); -webkit-font-smoothing: antialiased; margin: 0;
+    }
+    h1 {
+      font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;
+      color: var(--jm-ink); margin: 0 0 24px;
+    }
+    h1 .accent { color: var(--jm-green); }
+
+    /* mono-числа */
+    .num, .metric, .map-node-value { font-family: var(--jm-font-mono); font-feature-settings: "tnum" 1; }
+    .pos { color: var(--jm-green); }
+    .neg { color: var(--jm-coral-text); }
+
+    /* eyebrow / lable */
+    .eyebrow {
+      font-family: var(--jm-font-mono); font-size: 0.6875rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: var(--jm-tracking-label); color: var(--jm-muted);
+    }
+
+    /* --- Filters --- */
+    .filters {
+      background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-lg);
+      padding: 16px 20px; margin-bottom: 8px; box-shadow: var(--jm-e2);
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .preset-btn {
+      padding: 7px 13px; border: 1px solid var(--jm-line); border-radius: var(--jm-r-sm);
+      background: var(--jm-surface); color: var(--jm-muted); cursor: pointer;
+      font-family: var(--jm-font-sans); font-size: 13px; font-weight: 500;
+      transition: all var(--jm-dur-fast) var(--jm-ease);
+    }
+    .preset-btn:hover { border-color: var(--jm-green); color: var(--jm-green); }
+    .preset-btn.active { background: var(--jm-green); border-color: var(--jm-green); color: #fff; }
+    .custom-range { display: flex; align-items: center; gap: 8px; border-left: 1px solid var(--jm-line); padding-left: 16px; color: var(--jm-faint); }
+    .custom-range input {
+      font-family: var(--jm-font-mono); padding: 7px 10px; border: 1px solid var(--jm-line);
+      border-radius: var(--jm-r-sm); font-size: 13px; color: var(--jm-text); background: var(--jm-surface);
+    }
+    .custom-range input:focus { outline: none; border-color: var(--jm-green); box-shadow: var(--jm-ring); }
+    .period-label { font-family: var(--jm-font-mono); font-size: 12px; color: var(--jm-faint); margin-bottom: 16px; padding-left: 4px; }
+
+    /* --- Table cards --- */
+    .table-card {
+      background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-lg);
+      padding: 24px; box-shadow: var(--jm-e2); margin-top: 16px;
+    }
+    .table-card h2 { font-size: 0.875rem; color: var(--jm-muted); margin: 0 0 16px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; color: var(--jm-muted); font-weight: 600; padding: 8px 12px; border-bottom: 1px solid var(--jm-line); }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--jm-line-soft); color: var(--jm-text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--jm-green-tint-soft); }
+    td.num, th.num { text-align: right; }
+    .copy-btn { border: none; background: none; cursor: pointer; color: var(--jm-faint); font-size: 13px; padding: 0 4px; vertical-align: middle; transition: color var(--jm-dur-fast); }
+    .copy-btn:hover { color: var(--jm-green); }
+    .nowrap { white-space: nowrap; }
+
+    .loading-bar { height: 3px; background: linear-gradient(90deg, var(--jm-green) 40%, var(--jm-green-tint) 40%); background-size: 200% 100%; animation: loading 1.2s infinite; border-radius: 3px; margin-bottom: 20px; }
+    @keyframes loading { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+    .loading-bar.hidden { display: none; }
+
+    tr.clickable { cursor: pointer; }
+    tr.row-active td { background: var(--jm-green-tint) !important; }
+    .filter-tag {
+      font-family: var(--jm-font-mono); font-size: 11px; background: var(--jm-green-tint); color: var(--jm-green-deep);
+      border-radius: var(--jm-r-sm); padding: 2px 8px; margin-left: 8px; cursor: pointer; vertical-align: middle; font-weight: 500;
+    }
+    .filter-tag:hover { background: #d3ede4; }
+
+    /* --- Dropdowns --- */
+    .dropdown { position: relative; }
+    .dropdown-btn {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 7px 12px; border: 1px solid var(--jm-line); border-radius: var(--jm-r-sm);
+      background: var(--jm-surface); font-family: var(--jm-font-sans); font-size: 14px; cursor: pointer;
+      min-width: 160px; color: var(--jm-text); transition: border-color var(--jm-dur-fast);
+    }
+    .dropdown-btn:hover { border-color: var(--jm-green); }
+    .dropdown-btn.has-selection { border-color: var(--jm-green); color: var(--jm-green); }
+    .dropdown-panel { position: absolute; top: calc(100% + 4px); left: 0; background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-md); box-shadow: var(--jm-e3); z-index: 1000; min-width: 240px; overflow: hidden; }
+    .dropdown-search { display: block; width: 100%; padding: 9px 12px; border: none; border-bottom: 1px solid var(--jm-line-soft); font-family: var(--jm-font-sans); font-size: 13px; outline: none; }
+    .dropdown-options { max-height: 220px; overflow-y: auto; }
+    .dropdown-option { display: flex; align-items: center; gap: 8px; padding: 7px 12px; cursor: pointer; font-size: 13px; color: var(--jm-text); }
+    .dropdown-option:hover { background: var(--jm-green-tint-soft); }
+    .dropdown-option input { accent-color: var(--jm-green); cursor: pointer; }
+    .dropdown-option.hidden { display: none; }
+    .dropdown-footer { padding: 8px 12px; font-size: 12px; color: var(--jm-green); cursor: pointer; border-top: 1px solid var(--jm-line-soft); text-align: center; font-weight: 500; }
+    .dropdown-footer:hover { background: var(--jm-green-tint-soft); }
+
+    /* --- Metric map --- */
+    .map-card { background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-lg); padding: 24px; box-shadow: var(--jm-e2); margin-top: 16px; }
+    .map-card h2 { font-size: 0.875rem; color: var(--jm-muted); margin: 0 0 20px; font-weight: 600; }
+    .map-container { position: relative; }
+    .map-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 56px 40px; }
+    .map-node { position: relative; background: var(--jm-surface); border: 1px solid var(--jm-line); border-radius: var(--jm-r-md); padding: 12px 14px; box-sizing: border-box; transition: border-color var(--jm-dur), box-shadow var(--jm-dur); }
+    .map-node.empty { visibility: hidden; }
+    .map-node::before { content:""; position:absolute; inset:0 0 auto 0; height:3px; border-radius: var(--jm-r-md) var(--jm-r-md) 0 0; background: linear-gradient(90deg, var(--role, transparent), transparent 75%); opacity:.85; }
+    .map-node--focus { border-color: var(--jm-green); box-shadow: 0 0 0 3px rgba(14,156,125,.15); }
+    .map-node-head { display:flex; align-items:center; gap:6px; margin-bottom: 8px; }
+    .role-dot { width:7px; height:7px; border-radius:50%; background: var(--role, var(--jm-muted)); flex:none; }
+    .map-node-label { font-family: var(--jm-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing:.06em; color: var(--jm-muted); }
+    .map-node-value { font-size: 20px; font-weight: 700; color: var(--jm-ink); background: var(--jm-bg); border-radius: var(--jm-r-sm); padding: 6px 8px; display: block; text-align: center; }
+    .map-node-sub { font-family: var(--jm-font-mono); font-size: 10px; color: var(--jm-faint); margin-top: 4px; text-align: center; }
+
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--jm-text); }
+    .sort-arrow { color: var(--jm-green); margin-left: 3px; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <!-- Password gate -->
+  <div id="gate" style="display:none; position:fixed; inset:0; background:var(--jm-bg); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:var(--jm-surface); border:1px solid var(--jm-line); border-radius:var(--jm-r-xl); box-shadow:var(--jm-e3); padding:40px; width:340px; text-align:center;">
+      <div style="font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; color:var(--jm-ink); margin-bottom:6px;">Sales <span style="color:var(--jm-green)">Dashboard</span></div>
+      <div class="eyebrow" style="margin-bottom:24px;">JETMETRICS · PRIVATE</div>
+      <input id="gate-pw" type="password" placeholder="Пароль" autocomplete="current-password"
+        style="width:100%; font-family:var(--jm-font-mono); padding:11px 14px; border:1px solid var(--jm-line); border-radius:var(--jm-r-md); font-size:14px; box-sizing:border-box; margin-bottom:12px;"
+        onkeydown="if(event.key==='Enter')submitPassword()">
+      <label style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--jm-muted); margin-bottom:16px; cursor:pointer; justify-content:center;">
+        <input id="gate-remember" type="checkbox" checked style="accent-color:var(--jm-green);"> Запомнить на этом устройстве
+      </label>
+      <button onclick="submitPassword()"
+        style="width:100%; font-family:var(--jm-font-sans); padding:11px; background:var(--jm-green); color:#fff; border:none; border-radius:var(--jm-r-md); font-size:14px; font-weight:600; cursor:pointer;">
+        Войти
+      </button>
+      <div id="gate-error" style="color:var(--jm-coral-text); font-size:12px; margin-top:12px; min-height:16px;"></div>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+  <h1>Sales <span class="accent">Dashboard</span></h1>
+
+  <div class="filters">
+    <div class="presets">
+      <button class="preset-btn" onclick="setPreset('today', this)">Today</button>
+      <button class="preset-btn active" onclick="setPreset('yesterday', this)">Yesterday</button>
+      <button class="preset-btn" onclick="setPreset('wtd', this)">WTD</button>
+      <button class="preset-btn" onclick="setPreset('mtd', this)">MTD</button>
+      <button class="preset-btn" onclick="setPreset('ytd', this)">YTD</button>
+      <button class="preset-btn" onclick="setPreset('last_week', this)">Last week</button>
+      <button class="preset-btn" onclick="setPreset('last_month', this)">Last month</button>
+      <button class="preset-btn" onclick="setPreset('last_year', this)">Last year</button>
+      <button class="preset-btn" onclick="setPreset('all', this)">All time</button>
+    </div>
+    <div class="custom-range">
+      <input type="date" id="date-from" onchange="applyCustomRange()">
+      <span>—</span>
+      <input type="date" id="date-to" onchange="applyCustomRange()">
+    </div>
+    <div class="search-filters" style="display:flex;gap:8px;border-left:1px solid var(--jm-line);padding-left:16px;">
+      <div class="dropdown" id="dropdown-product">
+        <button class="dropdown-btn" id="dropdown-product-btn" onclick="toggleDropdown('dropdown-product')">
+          <span id="dropdown-product-label">Все продукты</span><span>▾</span>
+        </button>
+        <div class="dropdown-panel" id="dropdown-product-panel" style="display:none">
+          <input class="dropdown-search" type="text" placeholder="Поиск..." oninput="filterDropdownOptions('dropdown-product',this.value)">
+          <div class="dropdown-options" id="dropdown-product-options"></div>
+          <div class="dropdown-footer" onclick="clearDropdownSelection('dropdown-product')">Сбросить</div>
+        </div>
+      </div>
+      <div class="dropdown" id="dropdown-user">
+        <button class="dropdown-btn" id="dropdown-user-btn" onclick="toggleDropdown('dropdown-user')">
+          <span id="dropdown-user-label">Все пользователи</span><span>▾</span>
+        </button>
+        <div class="dropdown-panel" id="dropdown-user-panel" style="display:none">
+          <input class="dropdown-search" type="text" placeholder="Поиск..." oninput="filterDropdownOptions('dropdown-user',this.value)">
+          <div class="dropdown-options" id="dropdown-user-options"></div>
+          <div class="dropdown-footer" onclick="clearDropdownSelection('dropdown-user')">Сбросить</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-bar" id="loading-bar"></div>
+  <div class="period-label" id="period-label">Загрузка данных...</div>
+
+  <div class="map-card">
+    <h2>Metric map</h2>
+    <div class="map-container">
+      <svg id="map-svg" class="map-svg"></svg>
+      <div class="map-grid">
+        <div class="map-node" id="node-new-users" style="--role:var(--jm-blue)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">New Users</span></div>
+          <div class="map-node-value" id="map-new-users">...</div>
+          <div class="map-node-sub" id="map-new-users-sub"></div>
+        </div>
+        <div class="map-node" id="node-users" style="--role:var(--jm-green)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">Users</span></div>
+          <div class="map-node-value" id="map-users">...</div>
+        </div>
+        <div class="map-node" id="node-free" style="--role:var(--jm-green)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">Free orders</span></div>
+          <div class="map-node-value" id="map-free">...</div>
+        </div>
+        <div class="map-node" id="node-paid" style="--role:var(--jm-green)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">Paid orders</span></div>
+          <div class="map-node-value" id="map-paid">...</div>
+        </div>
+        <div class="map-node" id="node-total-sales" style="--role:var(--jm-purple)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">Total sales</span></div>
+          <div class="map-node-value" id="map-total-sales">...</div>
+        </div>
+        <div class="map-node empty"></div>
+        <div class="map-node" id="node-repeat-users" style="--role:var(--jm-blue)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">Repeat Users</span></div>
+          <div class="map-node-value" id="map-repeat-users">...</div>
+          <div class="map-node-sub" id="map-repeat-users-sub"></div>
+        </div>
+        <div class="map-node" id="node-fpu" style="--role:var(--jm-blue)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">Free orders per user</span></div>
+          <div class="map-node-value" id="map-fpu">...</div>
+        </div>
+        <div class="map-node" id="node-cr" style="--role:var(--jm-blue)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">CR to paid</span></div>
+          <div class="map-node-value" id="map-cr">...</div>
+        </div>
+        <div class="map-node" id="node-aov" style="--role:var(--jm-blue)">
+          <div class="map-node-head"><span class="role-dot"></span><span class="map-node-label">AOV</span></div>
+          <div class="map-node-value" id="map-aov">...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trend chart -->
+  <div class="map-card" style="margin-top:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <h2 style="margin:0;">Динамика</h2>
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div style="display:flex; gap:14px; font-size:12px; color:var(--jm-muted); align-items:center;">
+          <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:2px; background:var(--jm-green); display:inline-block;"></span>Free</span>
+          <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; border-radius:2px; background:var(--jm-blue); display:inline-block;"></span>Paid</span>
+          <span style="display:flex; align-items:center; gap:5px;"><span style="width:16px; height:2px; background:var(--jm-purple); display:inline-block;"></span>Выручка</span>
+        </div>
+        <div class="presets" id="granularity">
+          <button class="preset-btn" onclick="setGranularity('day', this)">День</button>
+          <button class="preset-btn active" onclick="setGranularity('week', this)">Неделя</button>
+          <button class="preset-btn" onclick="setGranularity('month', this)">Месяц</button>
+        </div>
+      </div>
+    </div>
+    <div id="chart-wrap" style="overflow-x:auto;">
+      <svg id="trend-svg" style="display:block;"></svg>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 16px; margin-top: 16px;">
+  <div class="table-card" style="margin-top: 0; flex: 1; min-width: 0; overflow-x: auto;">
+    <h2 id="products-title">По продуктам</h2>
+    <table>
+      <thead id="products-thead"><tr></tr></thead>
+      <tbody id="products-table"></tbody>
+    </table>
+  </div>
+
+  <div class="table-card" style="margin-top: 0; flex: 1; min-width: 0; overflow-x: auto;">
+    <h2 id="users-title">По пользователям</h2>
+    <table>
+      <thead id="users-thead"><tr></tr></thead>
+      <tbody id="users-table"></tbody>
+    </table>
+  </div>
+  </div>
+  </div><!-- /#app -->
+
+  <script>
+    var allRows = [];
+    var currentRows = [];
+    var currentFrom = null;
+    var activeProduct = null;
+    var activeUser = null;
+    var selectedProducts = {};
+    var selectedUsers = {};
+    var sortProducts = { col: 'total', dir: -1 };
+    var sortUsers = { col: 'total', dir: -1 };
+    var granularity = 'week';
+
+    function fmt(date) {
+      var d = date.getDate().toString().padStart(2,'0');
+      var m = (date.getMonth()+1).toString().padStart(2,'0');
+      return d + '.' + m + '.' + date.getFullYear();
+    }
+
+    function setPeriodLabel(from, to) {
+      var el = document.getElementById('period-label');
+      if (!from && !to) { el.textContent = 'Все данные'; return; }
+      if (from && to && fmt(from) === fmt(to)) { el.textContent = fmt(from); return; }
+      el.textContent = (from ? fmt(from) : '...') + ' — ' + (to ? fmt(to) : '...');
+    }
+
+    function getBaseRows() {
+      var hasPF = Object.keys(selectedProducts).length > 0;
+      var hasUF = Object.keys(selectedUsers).length > 0;
+      return currentRows.filter(function(r) {
+        if (hasPF && !selectedProducts[r['Item Name'] || '—']) return false;
+        if (hasUF && !selectedUsers[r['Purchase Email'] || '—']) return false;
+        return true;
+      });
+    }
+
+    function updateMetrics(rows, from) {
+      currentRows = rows;
+      currentFrom = from;
+      activeProduct = null;
+      activeUser = null;
+      selectedProducts = {};
+      selectedUsers = {};
+      populateDropdowns();
+      renderAll();
+    }
+
+    function fmtMapMoney(n) {
+      return '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function renderAll() {
+      var rows = getBaseRows();
+      renderMetricMap(rows);
+      renderTrend(rows);
+      renderProductsTable();
+      renderUsersTable();
+      requestAnimationFrame(drawMapArrows);
+    }
+
+    // --- Trend chart ---
+
+    function setGranularity(g, btn) {
+      granularity = g;
+      document.querySelectorAll('#granularity .preset-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderTrend(getBaseRows());
+    }
+
+    function bucketKey(d, g) {
+      var y = d.getFullYear();
+      if (g === 'month') return y + '-' + String(d.getMonth()+1).padStart(2,'0');
+      if (g === 'day')   return y + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      // week: ISO-ish, привязка к понедельнику
+      var day = (d.getDay() + 6) % 7;
+      var monday = new Date(d); monday.setDate(d.getDate() - day); monday.setHours(0,0,0,0);
+      return monday.getFullYear() + '-W' + String(monday.getMonth()+1).padStart(2,'0') + String(monday.getDate()).padStart(2,'0');
+    }
+    function bucketLabel(key, g) {
+      if (g === 'month') { var p = key.split('-'); return p[2==2? 1:1] ? key.slice(2) : key; }
+      return key.replace(/^20/, '').replace('-W', ' ');
+    }
+
+    function renderTrend(rows) {
+      var buckets = {};
+      rows.forEach(function(r) {
+        var raw = r['Purchase Date']; if (!raw) return;
+        var d = new Date(raw); if (isNaN(d.getTime())) return;
+        var k = bucketKey(d, granularity);
+        if (!buckets[k]) buckets[k] = { free:0, paid:0, rev:0, sort:d.getTime() };
+        var net = parseFloat(r['Net Total ($)']) || 0;
+        buckets[k].rev += net;
+        if (net === 0) buckets[k].free++; else buckets[k].paid++;
+        if (d.getTime() < buckets[k].sort) buckets[k].sort = d.getTime();
+      });
+      var keys = Object.keys(buckets).sort(function(a,b){ return buckets[a].sort - buckets[b].sort; });
+
+      var svg = document.getElementById('trend-svg');
+      if (keys.length === 0) { svg.innerHTML = ''; svg.setAttribute('width',0); svg.setAttribute('height',0);
+        document.getElementById('chart-wrap').insertAdjacentHTML('afterbegin',''); return; }
+
+      var barW = granularity === 'day' ? 14 : (granularity === 'week' ? 20 : 34);
+      var gap = granularity === 'day' ? 6 : (granularity === 'week' ? 10 : 16);
+      var padL = 8, padR = 8, padT = 12, padB = 40;
+      var plotH = 240;
+      var W = padL + padR + keys.length * (barW + gap);
+      var minW = document.getElementById('chart-wrap').clientWidth;
+      var H = plotH + padT + padB;
+
+      var maxCount = 1, maxRev = 1;
+      keys.forEach(function(k){ maxCount = Math.max(maxCount, buckets[k].free + buckets[k].paid); maxRev = Math.max(maxRev, buckets[k].rev); });
+
+      var els = '';
+      // сетка (4 линии)
+      for (var g=0; g<=4; g++) {
+        var gy = padT + plotH - (plotH * g/4);
+        els += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" stroke="var(--jm-line-soft)" stroke-width="1"/>';
+        els += '<text x="'+padL+'" y="'+(gy-3)+'" font-family="var(--jm-font-mono)" font-size="9" fill="var(--jm-faint)">'+Math.round(maxCount*g/4)+'</text>';
+      }
+
+      var linePts = [];
+      keys.forEach(function(k, i) {
+        var b = buckets[k];
+        var x = padL + i*(barW+gap);
+        var total = b.free + b.paid;
+        var freeH = plotH * (b.free / maxCount);
+        var paidH = plotH * (b.paid / maxCount);
+        var yFreeTop = padT + plotH - freeH;
+        var yPaidTop = yFreeTop - paidH;
+        // free (низ, зелёный) + paid (верх, синий) — стек
+        els += '<rect x="'+x+'" y="'+yFreeTop+'" width="'+barW+'" height="'+freeH+'" fill="var(--jm-green)" rx="2"/>';
+        els += '<rect x="'+x+'" y="'+yPaidTop+'" width="'+barW+'" height="'+paidH+'" fill="var(--jm-blue)" rx="2"/>';
+        // подпись оси X
+        var lbl = k.replace(/^20/, '').replace('-W', ' ');
+        els += '<text x="'+(x+barW/2)+'" y="'+(padT+plotH+14)+'" text-anchor="middle" font-family="var(--jm-font-mono)" font-size="8.5" fill="var(--jm-faint)" transform="rotate(35 '+(x+barW/2)+' '+(padT+plotH+14)+')">'+lbl+'</text>';
+        // точка линии выручки
+        var ly = padT + plotH - plotH*(b.rev/maxRev);
+        linePts.push([x+barW/2, ly, b.rev]);
+      });
+
+      // линия выручки (purple)
+      if (linePts.length > 1) {
+        var dPath = linePts.map(function(p,i){ return (i?'L':'M')+p[0]+' '+p[1]; }).join(' ');
+        els += '<path d="'+dPath+'" fill="none" stroke="var(--jm-purple)" stroke-width="2" stroke-linejoin="round"/>';
+      }
+      linePts.forEach(function(p){ els += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3" fill="var(--jm-surface)" stroke="var(--jm-purple)" stroke-width="2"/>'; });
+
+      svg.setAttribute('width', Math.max(W, minW));
+      svg.setAttribute('height', H);
+      svg.innerHTML = els;
+    }
+
+    // --- Dropdowns ---
+
+    function populateDropdowns() {
+      var products = {}, users = {};
+      currentRows.forEach(function(r) {
+        products[r['Item Name'] || '—'] = true;
+        users[r['Purchase Email'] || '—'] = true;
+      });
+      buildDropdown('dropdown-product', Object.keys(products).sort(), selectedProducts);
+      buildDropdown('dropdown-user', Object.keys(users).sort(), selectedUsers);
+    }
+
+    function buildDropdown(id, options, selected) {
+      var container = document.getElementById(id + '-options');
+      container.innerHTML = '';
+      options.forEach(function(opt) {
+        var div = document.createElement('div');
+        div.className = 'dropdown-option';
+        div.setAttribute('data-value', opt);
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!selected[opt];
+        cb.onchange = (function(o) { return function() {
+          if (this.checked) selected[o] = true; else delete selected[o];
+          updateDropdownLabel(id, selected);
+          activeProduct = null; activeUser = null;
+          renderAll();
+        }; })(opt);
+        var span = document.createElement('span');
+        span.textContent = opt;
+        div.appendChild(cb); div.appendChild(span);
+        container.appendChild(div);
+      });
+      updateDropdownLabel(id, selected);
+    }
+
+    function updateDropdownLabel(id, selected) {
+      var count = Object.keys(selected).length;
+      var label = document.getElementById(id + '-label');
+      var btn = document.getElementById(id + '-btn');
+      if (count === 0) {
+        label.textContent = id === 'dropdown-product' ? 'Все продукты' : 'Все пользователи';
+        btn.classList.remove('has-selection');
+      } else {
+        label.textContent = count + ' выбрано';
+        btn.classList.add('has-selection');
+      }
+    }
+
+    function toggleDropdown(id) {
+      var panel = document.getElementById(id + '-panel');
+      var isOpen = panel.style.display !== 'none';
+      document.querySelectorAll('.dropdown-panel').forEach(function(p) { p.style.display = 'none'; });
+      if (!isOpen) panel.style.display = 'block';
+    }
+
+    function filterDropdownOptions(id, query) {
+      var q = query.toLowerCase();
+      document.querySelectorAll('#' + id + '-options .dropdown-option').forEach(function(opt) {
+        opt.classList.toggle('hidden', q.length > 0 && !opt.getAttribute('data-value').toLowerCase().includes(q));
+      });
+    }
+
+    function clearDropdownSelection(id) {
+      if (id === 'dropdown-product') selectedProducts = {};
+      else selectedUsers = {};
+      document.querySelectorAll('#' + id + '-options input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+      updateDropdownLabel(id, id === 'dropdown-product' ? selectedProducts : selectedUsers);
+      activeProduct = null; activeUser = null;
+      renderAll();
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-panel').forEach(function(p) { p.style.display = 'none'; });
+      }
+    });
+
+    window.addEventListener('resize', drawMapArrows);
+
+    // --- Map arrows ---
+
+    function drawMapArrows() {
+      var svg = document.getElementById('map-svg');
+      var container = document.querySelector('.map-container');
+      if (!svg || !container) return;
+      var cr = container.getBoundingClientRect();
+      svg.setAttribute('width', cr.width);
+      svg.setAttribute('height', cr.height);
+
+      function pos(id) {
+        var el = document.getElementById(id);
+        if (!el) return null;
+        var r = el.getBoundingClientRect();
+        return { top: r.top - cr.top, bottom: r.bottom - cr.top,
+                 left: r.left - cr.left, right: r.right - cr.left,
+                 cx: r.left - cr.left + r.width / 2,
+                 cy: r.top - cr.top + r.height / 2 };
+      }
+
+      var lines = '';
+      var STROKE = '#C3CAD1'; // muted, чуть темнее --jm-line для читаемости на белом
+      function hLine(a, b) {
+        var f = pos(a), t = pos(b); if (!f || !t) return;
+        lines += '<line x1="'+(f.right+2)+'" y1="'+f.cy+'" x2="'+(t.left-2)+'" y2="'+f.cy+'" stroke="'+STROKE+'" stroke-width="1.5" marker-end="url(#arrowhead)"/>';
+      }
+      function vLine(a, b) {
+        var f = pos(a), t = pos(b); if (!f || !t) return;
+        lines += '<line x1="'+f.cx+'" y1="'+(f.top-2)+'" x2="'+t.cx+'" y2="'+(t.bottom+2)+'" stroke="'+STROKE+'" stroke-width="1.5" marker-end="url(#arrowhead)"/>';
+      }
+
+      hLine('node-new-users', 'node-users');
+      hLine('node-users', 'node-free');
+      hLine('node-free', 'node-paid');
+      hLine('node-paid', 'node-total-sales');
+      vLine('node-repeat-users', 'node-users');
+      vLine('node-fpu', 'node-free');
+      vLine('node-cr', 'node-paid');
+      vLine('node-aov', 'node-total-sales');
+
+      svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="'+STROKE+'"/></marker></defs>' + lines;
+    }
+
+    function renderMetricMap(rows) {
+      var firstSeen = {};
+      allRows.forEach(function(r) {
+        var email = r['Purchase Email'] || '—';
+        var d = new Date(r['Purchase Date']);
+        if (!firstSeen[email] || d < firstSeen[email]) firstSeen[email] = d;
+      });
+
+      var periodStart = currentFrom ? new Date(currentFrom) : null;
+      if (periodStart) periodStart.setHours(0,0,0,0);
+
+      var uniqueEmails = {};
+      rows.forEach(function(r) { uniqueEmails[r['Purchase Email'] || '—'] = true; });
+      var totalUsers = Object.keys(uniqueEmails).length;
+
+      var newCount = 0, repeatCount = 0;
+      Object.keys(uniqueEmails).forEach(function(email) {
+        if (periodStart && firstSeen[email] && firstSeen[email] >= periodStart) newCount++;
+        else repeatCount++;
+      });
+
+      var free = 0, paid = 0, revenue = 0;
+      rows.forEach(function(r) {
+        var net = parseFloat(r['Net Total ($)']) || 0;
+        revenue += net;
+        if (net === 0) free++; else paid++;
+      });
+
+      var newPct  = totalUsers > 0 && periodStart ? Math.round(newCount / totalUsers * 100) + '%' : '—';
+      var repPct  = totalUsers > 0 && periodStart ? Math.round(repeatCount / totalUsers * 100) + '%' : '—';
+
+      document.getElementById('map-new-users').textContent = newPct;
+      document.getElementById('map-new-users-sub').textContent = periodStart ? newCount + ' users' : '';
+      document.getElementById('map-users').textContent = totalUsers.toLocaleString();
+      document.getElementById('map-free').textContent = free.toLocaleString();
+      document.getElementById('map-paid').textContent = paid.toLocaleString();
+      document.getElementById('map-total-sales').textContent = revenue > 0 ? fmtMapMoney(revenue) : '—';
+      document.getElementById('map-repeat-users').textContent = repPct;
+      document.getElementById('map-repeat-users-sub').textContent = periodStart ? repeatCount + ' users' : '';
+      document.getElementById('map-fpu').textContent = totalUsers > 0 ? (free / totalUsers).toFixed(1) : '—';
+      document.getElementById('map-cr').textContent = free > 0 ? (paid / free * 100).toFixed(1) + '%' : '—';
+      document.getElementById('map-aov').textContent = paid > 0 ? fmtMapMoney(revenue / paid) : '—';
+    }
+
+    function renderProductsTable() {
+      var rows = activeUser
+        ? getBaseRows().filter(function(r) { return (r['Purchase Email'] || '—') === activeUser; })
+        : getBaseRows();
+
+      var products = {};
+      rows.forEach(function(r) {
+        var name = r['Item Name'] || '—';
+        var email = r['Purchase Email'] || '—';
+        var net = parseFloat(r['Net Total ($)']) || 0;
+        if (!products[name]) products[name] = { total: 0, free: 0, paid: 0, revenue: 0, users: {} };
+        products[name].total++;
+        products[name].revenue += net;
+        products[name].users[email] = true;
+        if (net === 0) products[name].free++; else products[name].paid++;
+      });
+
+      var pCols = [
+        { key: 'name', label: 'Название продукта', num: false },
+        { key: 'total', label: 'Скачиваний', num: true },
+        { key: 'free', label: 'Бесплатных', num: true },
+        { key: 'paid', label: 'Платных', num: true },
+        { key: 'cr', label: 'CR to paid', num: true },
+        { key: 'revenue', label: 'Выручка', num: true },
+        { key: 'rpu', label: 'Rev/user', num: true },
+      ];
+      document.querySelector('#products-thead tr').innerHTML = pCols.map(function(c) {
+        var cls = (c.num ? 'num ' : '') + 'sortable';
+        var arrow = sortProducts.col === c.key ? '<span class="sort-arrow">' + (sortProducts.dir === -1 ? '▼' : '▲') + '</span>' : '';
+        return '<th class="' + cls + '" onclick="sortProductsBy(\'' + c.key + '\')">' + c.label + arrow + '</th>';
+      }).join('');
+
+      var sortedProducts = Object.keys(products).sort(function(a, b) {
+        var pa = products[a], pb = products[b], d = sortProducts.dir;
+        var rpu = function(p) { var u = Object.keys(p.users).length; return u > 0 ? p.revenue / u : 0; };
+        if (sortProducts.col === 'name') return d * a.localeCompare(b);
+        if (sortProducts.col === 'free') return d * (pa.free - pb.free);
+        if (sortProducts.col === 'paid') return d * (pa.paid - pb.paid);
+        if (sortProducts.col === 'cr') return d * ((pa.free > 0 ? pa.paid/pa.free : 0) - (pb.free > 0 ? pb.paid/pb.free : 0));
+        if (sortProducts.col === 'revenue') return d * (pa.revenue - pb.revenue);
+        if (sortProducts.col === 'rpu') return d * (rpu(pa) - rpu(pb));
+        return d * (pa.total - pb.total);
+      });
+
+      var titleEl = document.getElementById('products-title');
+      if (activeUser) {
+        titleEl.innerHTML = 'По продуктам <span class="filter-tag" onclick="clearUserFilter()">× ' + activeUser + '</span>';
+      } else {
+        titleEl.textContent = 'По продуктам';
+      }
+
+      var tbody = document.getElementById('products-table');
+      tbody.innerHTML = '';
+      sortedProducts.forEach(function(name) {
+        var p = products[name];
+        var cr = p.free > 0 ? (p.paid / p.free * 100).toFixed(1) + '%' : '—';
+        var uniqueUsers = Object.keys(p.users).length;
+        var rpu = uniqueUsers > 0 ? '$' + (p.revenue / uniqueUsers).toFixed(1) : '—';
+        var tr = document.createElement('tr');
+        tr.className = 'clickable' + (name === activeProduct ? ' row-active' : '');
+        tr.onclick = (function(n) { return function() {
+          activeProduct = (activeProduct === n) ? null : n;
+          renderProductsTable();
+          renderUsersTable();
+        }; })(name);
+        tr.innerHTML =
+          '<td>' + name + '</td>' +
+          '<td class="num">' + p.total.toLocaleString() + '</td>' +
+          '<td class="num">' + p.free.toLocaleString() + '</td>' +
+          '<td class="num">' + p.paid.toLocaleString() + '</td>' +
+          '<td class="num">' + cr + '</td>' +
+          '<td class="num">' + fmtMapMoney(p.revenue) + '</td>' +
+          '<td class="num">' + rpu + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderUsersTable() {
+      var rows = activeProduct
+        ? getBaseRows().filter(function(r) { return (r['Item Name'] || '—') === activeProduct; })
+        : getBaseRows();
+
+      var firstSeen = {};
+      allRows.forEach(function(r) {
+        var email = r['Purchase Email'] || '—';
+        var d = new Date(r['Purchase Date']);
+        if (!firstSeen[email] || d < firstSeen[email]) firstSeen[email] = d;
+      });
+
+      var periodStart = currentFrom ? new Date(currentFrom) : null;
+      if (periodStart) periodStart.setHours(0,0,0,0);
+
+      var users = {};
+      rows.forEach(function(r) {
+        var email = r['Purchase Email'] || '—';
+        var name = r['Buyer Name'] || '';
+        var net = parseFloat(r['Net Total ($)']) || 0;
+        if (!users[email]) users[email] = { name: name, total: 0, free: 0, paid: 0, revenue: 0 };
+        if (name && !users[email].name) users[email].name = name;
+        users[email].total++;
+        users[email].revenue += net;
+        if (net === 0) users[email].free++; else users[email].paid++;
+      });
+
+      var uCols = [
+        { key: 'email', label: 'Email', num: false },
+        { key: 'name', label: 'Имя', num: false },
+        { key: 'total', label: 'Скачиваний', num: true },
+        { key: 'free', label: 'Бесплатных', num: true },
+        { key: 'paid', label: 'Платных', num: true },
+        { key: 'cr', label: 'CR to paid', num: true },
+        { key: 'revenue', label: 'Выручка', num: true },
+      ];
+      document.querySelector('#users-thead tr').innerHTML = uCols.map(function(c) {
+        var cls = (c.num ? 'num ' : '') + 'sortable';
+        var arrow = sortUsers.col === c.key ? '<span class="sort-arrow">' + (sortUsers.dir === -1 ? '▼' : '▲') + '</span>' : '';
+        return '<th class="' + cls + '" onclick="sortUsersBy(\'' + c.key + '\')">' + c.label + arrow + '</th>';
+      }).join('');
+
+      var sortedUsers = Object.keys(users).sort(function(a, b) {
+        var ua = users[a], ub = users[b], d = sortUsers.dir;
+        if (sortUsers.col === 'email') return d * a.localeCompare(b);
+        if (sortUsers.col === 'name') return d * (ua.name || '').localeCompare(ub.name || '');
+        if (sortUsers.col === 'free') return d * (ua.free - ub.free);
+        if (sortUsers.col === 'paid') return d * (ua.paid - ub.paid);
+        if (sortUsers.col === 'cr') return d * ((ua.free > 0 ? ua.paid/ua.free : 0) - (ub.free > 0 ? ub.paid/ub.free : 0));
+        if (sortUsers.col === 'revenue') return d * (ua.revenue - ub.revenue);
+        return d * (ua.total - ub.total);
+      });
+
+      var titleEl = document.getElementById('users-title');
+      if (activeProduct) {
+        titleEl.innerHTML = 'По пользователям <span class="filter-tag" onclick="clearProductFilter()">× ' + activeProduct + '</span>';
+      } else {
+        titleEl.textContent = 'По пользователям';
+      }
+
+      var utbody = document.getElementById('users-table');
+      utbody.innerHTML = '';
+      sortedUsers.forEach(function(email) {
+        var u = users[email];
+        var isNew = periodStart && firstSeen[email] && firstSeen[email] >= periodStart;
+        var cr = u.free > 0 ? (u.paid / u.free * 100).toFixed(1) + '%' : '—';
+        var emailCell = email + ' <span class="nowrap"><button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + email.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>' + (isNew ? ' 🆕' : '') + '</span>';
+        var nameCell = u.name
+          ? '<span class="nowrap">' + u.name + ' <button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + u.name.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button></span>'
+          : '—';
+        var tr = document.createElement('tr');
+        tr.className = 'clickable' + (email === activeUser ? ' row-active' : '');
+        tr.onclick = (function(e) { return function(ev) {
+          if (ev.target.classList.contains('copy-btn')) return;
+          activeUser = (activeUser === e) ? null : e;
+          renderProductsTable();
+          renderUsersTable();
+        }; })(email);
+        tr.innerHTML =
+          '<td>' + emailCell + '</td>' +
+          '<td>' + nameCell + '</td>' +
+          '<td class="num">' + u.total.toLocaleString() + '</td>' +
+          '<td class="num">' + u.free.toLocaleString() + '</td>' +
+          '<td class="num">' + u.paid.toLocaleString() + '</td>' +
+          '<td class="num">' + cr + '</td>' +
+          '<td class="num">$' + u.revenue.toFixed(2) + '</td>';
+        utbody.appendChild(tr);
+      });
+    }
+
+    function sortProductsBy(col) {
+      if (sortProducts.col === col) sortProducts.dir *= -1;
+      else { sortProducts.col = col; sortProducts.dir = -1; }
+      renderProductsTable();
+    }
+
+    function sortUsersBy(col) {
+      if (sortUsers.col === col) sortUsers.dir *= -1;
+      else { sortUsers.col = col; sortUsers.dir = -1; }
+      renderUsersTable();
+    }
+
+    function clearProductFilter() {
+      activeProduct = null;
+      renderProductsTable();
+      renderUsersTable();
+    }
+
+    function clearUserFilter() {
+      activeUser = null;
+      renderProductsTable();
+      renderUsersTable();
+    }
+
+    function filterRows(from, to) {
+      return allRows.filter(function(r) {
+        var d = new Date(r['Purchase Date']);
+        if (from) { var f = new Date(from); f.setHours(0,0,0,0); if (d < f) return false; }
+        if (to)   { var t = new Date(to);   t.setHours(23,59,59,999); if (d > t) return false; }
+        return true;
+      });
+    }
+
+    function setActive(btn) {
+      document.querySelectorAll('.filters .presets .preset-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    }
+
+    function setPreset(type, btn) {
+      document.getElementById('date-from').value = '';
+      document.getElementById('date-to').value = '';
+      setActive(btn);
+
+      var today = new Date();
+      var from, to;
+
+      if (type === 'today') {
+        from = to = new Date(today);
+      } else if (type === 'yesterday') {
+        from = new Date(today); from.setDate(from.getDate() - 1);
+        to = new Date(from);
+      } else if (type === 'wtd') {
+        var day = today.getDay() || 7;
+        from = new Date(today); from.setDate(today.getDate() - day + 1);
+        to = today;
+      } else if (type === 'mtd') {
+        from = new Date(today.getFullYear(), today.getMonth(), 1);
+        to = today;
+      } else if (type === 'ytd') {
+        from = new Date(today.getFullYear(), 0, 1);
+        to = today;
+      } else if (type === 'last_week') {
+        var day = today.getDay() || 7;
+        from = new Date(today); from.setDate(today.getDate() - day - 6);
+        to = new Date(from); to.setDate(from.getDate() + 6);
+      } else if (type === 'last_month') {
+        from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        to = new Date(today.getFullYear(), today.getMonth(), 0);
+      } else if (type === 'last_year') {
+        from = new Date(today.getFullYear() - 1, 0, 1);
+        to = new Date(today.getFullYear() - 1, 11, 31);
+      } else {
+        from = null; to = null;
+      }
+
+      setPeriodLabel(from, to);
+      updateMetrics(filterRows(from, to), from);
+    }
+
+    function applyCustomRange() {
+      var fromVal = document.getElementById('date-from').value;
+      var toVal = document.getElementById('date-to').value;
+      if (!fromVal && !toVal) return;
+      document.querySelectorAll('.filters .presets .preset-btn').forEach(function(b) { b.classList.remove('active'); });
+      var from = fromVal ? new Date(fromVal) : null;
+      var to = toVal ? new Date(toVal) : null;
+      setPeriodLabel(from, to);
+      updateMetrics(filterRows(from, to), from);
+    }
+
+    // ============================================================
+    //  ЗАГРУЗКА ДАННЫХ: fetch зашифрованного sales.json + расшифровка
+    //  Формат payload: base64( salt[16] | iv[16] | AES-CBC ciphertext ),
+    //  ключ = PBKDF2-SHA256(пароль, salt, 150000). Пишет Apps Script (CryptoJS).
+    // ============================================================
+    var DATA_URL = 'sales.json';
+    var PBKDF2_ITERS = 150000;
+
+    function b64ToBytes(b64) {
+      var bin = atob(b64), arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return arr;
+    }
+
+    async function decryptPayload(password, b64) {
+      var raw = b64ToBytes(b64);
+      var salt = raw.slice(0, 16), iv = raw.slice(16, 32), ct = raw.slice(32);
+      var km = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+      var key = await crypto.subtle.deriveKey(
+        { name:'PBKDF2', salt: salt, iterations: PBKDF2_ITERS, hash:'SHA-256' },
+        km, { name:'AES-CBC', length:256 }, false, ['decrypt']);
+      var pt = await crypto.subtle.decrypt({ name:'AES-CBC', iv: iv }, key, ct);
+      return new TextDecoder().decode(pt);
+    }
+
+    var encryptedBlob = null;
+
+    async function loadAndRender(password) {
+      var json = await decryptPayload(password, encryptedBlob);   // бросит, если пароль неверный
+      allRows = JSON.parse(json);
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('loading-bar').classList.add('hidden');
+      var yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      setPeriodLabel(yesterday, yesterday);
+      updateMetrics(filterRows(yesterday, yesterday), yesterday);
+    }
+
+    async function submitPassword() {
+      var pw = document.getElementById('gate-pw').value;
+      var err = document.getElementById('gate-error');
+      if (!pw) { err.textContent = 'Введите пароль'; return; }
+      err.textContent = 'Расшифровка...';
+      try {
+        await loadAndRender(pw);
+        if (document.getElementById('gate-remember').checked) {
+          try { localStorage.setItem('jm_gumroad_pw', pw); } catch(e) {}
+        }
+      } catch (e) {
+        err.textContent = 'Неверный пароль';
+      }
+    }
+
+    async function boot() {
+      try {
+        var resp = await fetch(DATA_URL, { cache: 'no-store' });
+        if (!resp.ok) throw new Error('sales.json ' + resp.status);
+        encryptedBlob = (await resp.text()).trim();
+      } catch (e) {
+        document.getElementById('gate').style.display = 'flex';
+        document.getElementById('gate-error').textContent = 'Не удалось загрузить данные';
+        return;
+      }
+      // Пробуем запомненный пароль
+      var saved = null;
+      try { saved = localStorage.getItem('jm_gumroad_pw'); } catch(e) {}
+      if (saved) {
+        try { await loadAndRender(saved); return; }
+        catch (e) { try { localStorage.removeItem('jm_gumroad_pw'); } catch(_){} }
+      }
+      // Иначе показываем гейт
+      document.getElementById('gate').style.display = 'flex';
+      document.getElementById('gate-pw').focus();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
