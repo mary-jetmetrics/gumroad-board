@@ -85,10 +85,12 @@
     .copy-btn { border: none; background: none; cursor: pointer; color: var(--jm-faint); font-size: 13px; padding: 0 4px; vertical-align: middle; transition: color var(--jm-dur-fast); }
     .copy-btn:hover { color: var(--jm-green); }
     .nowrap { white-space: nowrap; }
-    .cell-ellip { display: inline-block; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
-    #users-table td:first-child, #users-table td:nth-child(2) { white-space: nowrap; }
-    #users-thead th:first-child, #users-table td:first-child { max-width: 190px; }
-    #users-thead th:nth-child(2), #users-table td:nth-child(2) { max-width: 180px; }
+    .cell-flex { display: flex; align-items: center; gap: 6px; }
+    .cell-flex .cell-ellip { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-icons { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+    .new-badge { font-size: 11px; }
+    #users-thead th:first-child, #users-table td:first-child { width: 200px; max-width: 200px; }
+    #users-thead th:nth-child(2), #users-table td:nth-child(2) { width: 170px; max-width: 170px; }
 
     .loading-bar { height: 3px; background: linear-gradient(90deg, var(--jm-green) 40%, var(--jm-green-tint) 40%); background-size: 200% 100%; animation: loading 1.2s infinite; border-radius: 3px; margin-bottom: 20px; }
     @keyframes loading { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
@@ -837,11 +839,13 @@
         // «только новые» работает лишь когда выбран период (иначе новизну не определить)
         if (showOnlyNew && periodStart && !isNew) return;
         var cr = u.free > 0 ? (u.paid / u.free * 100).toFixed(1) + '%' : '—';
-        var emailCell = '<span class="cell-ellip" title="' + email + '">' + email + '</span>'
-          + '<span class="nowrap"><button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + email.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>'
-          + (isNew ? ' 🆕' : '') + '</span>';
+        var emailCell = '<div class="cell-flex">'
+          + '<span class="cell-ellip" title="' + email + '">' + email + '</span>'
+          + '<span class="cell-icons"><button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + email.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>'
+          + (isNew ? '<span class="new-badge">🆕</span>' : '') + '</span></div>';
         var nameCell = u.name
-          ? '<span class="cell-ellip" title="' + u.name.replace(/"/g, '&quot;') + '">' + u.name + '</span> <button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + u.name.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button>'
+          ? '<div class="cell-flex"><span class="cell-ellip" title="' + u.name.replace(/"/g, '&quot;') + '">' + u.name + '</span>'
+            + '<span class="cell-icons"><button class="copy-btn" onclick="navigator.clipboard.writeText(\'' + u.name.replace(/'/g, "\\'") + '\')" title="Копировать">⧉</button></span></div>'
           : '—';
         var tr = document.createElement('tr');
         tr.className = 'clickable' + (email === activeUser ? ' row-active' : '');
